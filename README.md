@@ -14,7 +14,7 @@ CRC32 checksums are used to ensure integrity of both the header and the data.
 Another one-file filesystem where instead recovery and integrity is prioritized.
 This is useful for storing application state and configuration.
 If a write fails or is interrupted the old data is recoverable.
-The superblock (filesystem header) is duplicated at the beginning and end of the block device and is checked with a cryptographic hash.
-The data is as well checked with a cryptographic hash.
+The superblock (filesystem header) is duplicated at the beginning and end of the block device and is checked with the cryptographic hash SHA-256.
+The data is as well checked with the cryptographic hash SHA-256.
 
 With [mirage-block-partition](https://github.com/reynir/mirage-block-partition/) you can store multiple files with static allocation.

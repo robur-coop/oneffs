@@ -27,4 +27,7 @@ depends: [
   "lwt" {>= "2.6.0"}
   "cstruct" {>= "6.0.0"}
   "checkseum"
+  "ptime"
+  "digestif"
+  "logs"
 ]
