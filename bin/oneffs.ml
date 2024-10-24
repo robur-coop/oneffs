@@ -77,14 +77,15 @@ let create block_size oneffs file =
   Fun.protect ~finally @@ fun () ->
   output_string oc (Cstruct.to_string sector0);
   let buf = Bytes.make block_size '\000' in
-  let rec go () = match input ic buf 0 (Bytes.length buf) with
-    | 0 -> ()
-    | len ->
+  let rec go off =
+    if off < length then begin
+      let len = min (Bytes.length buf) (length - off) in
+      really_input ic buf 0 len;
       if len < block_size
       then Bytes.fill buf len (block_size - len) '\000';
-      output_bytes oc buf; go ()
-    | exception End_of_file -> () in
-  go ()
+      output_bytes oc buf; go (off + len)
+    end in
+  go 0
 
 open Cmdliner
 
