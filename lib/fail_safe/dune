@@ -1,4 +1,4 @@
 (library
-  (public_name oneffs-fail-safe)
+  (public_name oneffs.fail-safe)
   (name oneFFS_Fail_safe)
   (libraries mirage-block cstruct lwt mirage-clock ptime digestif logs))
