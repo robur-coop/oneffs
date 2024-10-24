@@ -106,7 +106,7 @@ let new_oneffs_file =
   Arg.(required & opt (some (conv (parser, Fmt.string))) None & info [ "o"; "output" ] ~docv:"ONEFFS" ~doc)
 
 let existing_file =
-  let doc = "The input file to create a OneFFS filesystem." in
+  let doc = "The input file to fill a OneFFS filesystem with." in
   Arg.(required & opt (some file) None & info [ "i"; "input" ] ~docv:"FILE" ~doc)
 
 let get_cmd =
