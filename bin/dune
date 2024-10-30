@@ -1,3 +1,5 @@
 (executable
  (name oneffs)
+ (public_name oneffs)
+ (package oneffs)
  (libraries oneffs cmdliner mirage-block-unix))

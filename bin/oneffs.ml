@@ -1,5 +1,7 @@
 open Lwt.Syntax
 
+let error_msgf fmt = Fmt.kstr (fun msg -> Error (`Msg msg)) fmt
+
 module FS = OneFFS.Make(Block)
 
 let connect block_size file =
@@ -49,6 +51,42 @@ let get_info block_size file =
   | None ->
     print_endline "Unset."
 
+let crc_of_file filename =
+  let ic = open_in filename in
+  let finally () = close_in ic in
+  Fun.protect ~finally @@ fun () ->
+  let buf = Bytes.create 0x7ff in
+  let rec go crc = match input ic buf 0 (Bytes.length buf) with
+    | 0 -> crc
+    | len -> go (Checkseum.Crc32.digest_bytes buf 0 len crc)
+    | exception End_of_file -> crc in
+  go Checkseum.Crc32.default
+
+let create block_size oneffs file =
+  let ic = open_in file in
+  let finally () = close_in ic in
+  Fun.protect ~finally @@ fun () ->
+  let length = in_channel_length ic in
+  (* let length = ((ln + (block_size - 1)) / block_size) * block_size in *)
+  let file_crc = crc_of_file file in
+  let hdr = OneFFS.Header.{ length; file_crc } in
+  let sector0 = Cstruct.create block_size in
+  OneFFS.Header.marshal hdr sector0;
+  let oc = open_out oneffs in
+  let finally () = close_out oc in
+  Fun.protect ~finally @@ fun () ->
+  output_string oc (Cstruct.to_string sector0);
+  let buf = Bytes.make block_size '\000' in
+  let rec go off =
+    if off < length then begin
+      let len = min (Bytes.length buf) (length - off) in
+      really_input ic buf 0 len;
+      if len < block_size
+      then Bytes.fill buf len (block_size - len) '\000';
+      output_bytes oc buf; go (off + len)
+    end in
+  go 0
+
 open Cmdliner
 
 let block_size =
@@ -58,6 +96,18 @@ let block_size =
 let oneffs_file =
   let doc = "File with OneFFS filesystem." in
   Arg.(required & pos 0 (some file) None & info [] ~docv:"ONEFFS" ~doc)
+
+let new_oneffs_file =
+  let doc = "New file with OneFFS filesystem." in
+  let parser str =
+    if Sys.file_exists str
+    then error_msgf "%s already exists" str
+    else Ok str in
+  Arg.(required & opt (some (conv (parser, Fmt.string))) None & info [ "o"; "output" ] ~docv:"ONEFFS" ~doc)
+
+let existing_file =
+  let doc = "The input file to fill a OneFFS filesystem with." in
+  Arg.(required & opt (some file) None & info [ "i"; "input" ] ~docv:"FILE" ~doc)
 
 let get_cmd =
   let doc = "Get contents, if any, of OneFFS." in
@@ -79,11 +129,24 @@ let info_cmd =
   let info = Cmd.info "info" ~doc in
   Cmd.v info Term.(const Lwt_main.run $ (const get_info $ block_size $ oneffs_file))
 
+let create_cmd =
+  let doc = "Create a new OneFFS image from a file." in
+  let man = [
+    `S Manpage.s_description;
+    `P "Create a disk image with a OneFFS filesystem initialized to the input \
+      file. The disk image is just big enough to hold the input file's data. \
+      You may extend the image by additional sectors, e.g. assuming a block \
+      size of 512: $(b,truncate -s +512 disk.img)."
+  ]
+  in
+  let info = Cmd.info "create" ~doc ~man in
+  Cmd.v info Term.(const create $ block_size $ new_oneffs_file $ existing_file)
+
 let main_cmd =
   let doc = "OneFFS tool" in
   let info = Cmd.info "oneffs" ~version:"%%VERSION%%" ~doc in
   let default = Term.(ret (const (`Help (`Pager, None)))) in
-  Cmd.group info ~default [get_cmd; set_cmd; info_cmd]
+  Cmd.group info ~default [get_cmd; set_cmd; info_cmd; create_cmd]
 
 let () =
   exit (Cmd.eval main_cmd)

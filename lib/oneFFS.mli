@@ -1,3 +1,13 @@
+module Header : sig
+  type t =
+    { length : int
+    ; file_crc : Checkseum.Crc32.t }
+
+  val create : string -> t
+  val unmarshal : Cstruct.t -> (t option, string) result
+  val marshal : t -> Cstruct.t -> unit
+end
+
 module Make(B : Mirage_block.S) : sig
   type t
 
