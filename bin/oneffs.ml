@@ -131,7 +131,15 @@ let info_cmd =
 
 let create_cmd =
   let doc = "Create a new OneFFS image from a file." in
-  let info = Cmd.info "create" ~doc in
+  let man = [
+    `S Manpage.s_description;
+    `P "Create a disk image with a OneFFS filesystem initialized to the input \
+      file. The disk image is just big enough to hold the input file's data. \
+      You may extend the image by additional sectors, e.g. assuming a block \
+      size of 512: $(b,truncate -s +512 disk.img)."
+  ]
+  in
+  let info = Cmd.info "create" ~doc ~man in
   Cmd.v info Term.(const create $ block_size $ new_oneffs_file $ existing_file)
 
 let main_cmd =
