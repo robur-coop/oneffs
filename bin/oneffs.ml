@@ -21,6 +21,7 @@ let get block_size file =
     exit 1
   | Error e ->
     FS.pp_error Format.err_formatter e;
+    Format.pp_print_newline Format.err_formatter ();
     exit 2
 
 let set block_size file =
@@ -41,6 +42,7 @@ let set block_size file =
   | Ok () -> Lwt.return_unit
   | Error e ->
     FS.pp_write_error Format.err_formatter e;
+    Format.pp_print_newline Format.err_formatter ();
     exit 2
 
 let get_info block_size file =
