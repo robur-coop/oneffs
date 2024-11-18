@@ -27,6 +27,28 @@ module Make(B : Mirage_block.S) : sig
   (** [read fs] reads the data stored if any. An error is returned if the
       checksum is bad or if the read fails. *)
 
+  val stream_write : t -> ((string -> (unit, write_error) result Lwt.t) ->
+                           ('a, write_error) result Lwt.t) ->
+    ('a, write_error) result Lwt.t
+  (** [stream_write t f] calls [f append] where [append] is a function that
+      appends data to a fresh file. Once the [f append] task is resolved the file
+      is committed and the result is returned. *)
+
+  val stream_read : t ->
+    (unit ->
+     ([> `Bad_checksum | `Data of string | `End_of_file ],
+      [> `Block of B.error ])
+       Lwt_result.t)
+      option
+  (** [stream_read t] is [None] if [is_set t] is false. Otherwise, it is
+      [Some read] where [read] can be called repeatedly to read sectors of the
+      file at a time. [read ()] returns [Ok (`Data data)] when there is more
+      data to be read. At the end of the file either [Ok `End_of_file] or [Ok
+      `Bad_checksum] is returned depending on whether the checksum for the data
+      was as expected.
+
+      It is an error to write while reading. *)
+
   val is_set : t -> bool
   (**  [is_set fs] is true if [fs] has any data. *)
 
