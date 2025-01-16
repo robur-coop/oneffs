@@ -31,3 +31,4 @@ depends: [
   "digestif"
   "logs"
 ]
+x-maintenance-intent: [ "(latest)" ]
